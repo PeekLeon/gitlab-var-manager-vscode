@@ -1,0 +1,69 @@
+{
+  "name": "gitvarmng",
+  "displayName": "gitvarmng",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.87.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitvarmng.gitlabPushVariables",
+        "title": "Gitlab Push Variables"
+      },
+      {
+        "command": "gitvarmng.gitlabPullVariables",
+        "title": "Gitlab Pull Variables"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Gitlab Variables Manager",
+      "properties": {
+        "gitvarmng.gitlabTokens": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "domain": {
+                        "type": "string",
+                        "description": "GitLab domain (e.g., a.gitlab.rec.fr)"
+                    },
+                    "privateToken": {
+                        "type": "string",
+                        "description": "Private token for the specified domain"
+                    }
+                },
+                "required": ["domain", "privateToken"]
+            }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.87.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3",
+    "@vscode/test-cli": "^0.0.6",
+    "@vscode/test-electron": "^2.3.9",
+    "fs": "0.0.1-security"
+  }
+}
