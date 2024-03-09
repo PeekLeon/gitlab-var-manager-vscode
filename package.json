@@ -1,15 +1,30 @@
 {
   "name": "gitvarmng",
   "displayName": "gitvarmng",
-  "description": "",
-  "version": "0.0.1",
+  "description": "Pull, Push your CI/CD variables from/to your Gitlab projects in json format. ",
+  "version": "1.0.0",
+  "publisher": "RomainLEON",
+  "icon": "images/logo.png",
+  "keywords": [
+    "git",
+    "gitlab",
+    "variables",
+    "ci/cd"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PeekLeon/gitlab-var-manager-vscode"
+  },
   "engines": {
     "vscode": "^1.87.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -20,6 +35,10 @@
       {
         "command": "gitvarmng.gitlabPullVariables",
         "title": "Gitlab Pull Variables"
+      },
+      {
+        "command": "gitvarmng.gitlabDelVariables",
+        "title": "Gitlab Del Variables"
       }
     ],
     "configuration": {
@@ -27,21 +46,30 @@
       "title": "Gitlab Variables Manager",
       "properties": {
         "gitvarmng.gitlabTokens": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "domain": {
-                        "type": "string",
-                        "description": "GitLab domain (e.g., a.gitlab.rec.fr)"
-                    },
-                    "privateToken": {
-                        "type": "string",
-                        "description": "Private token for the specified domain"
-                    }
-                },
-                "required": ["domain", "privateToken"]
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "domain": {
+                "type": "string",
+                "description": "GitLab domain (e.g., a.gitlab.rec.fr)"
+              },
+              "privateToken": {
+                "type": "string",
+                "description": "Private token for the specified domain"
+              }
+            },
+            "required": [
+              "domain",
+              "privateToken"
+            ]
+          },
+          "example": [
+            {
+                "domain": "example.gitlab.com",
+                "privateToken": "your_private_token_here"
             }
+          ]
         }
       }
     }
@@ -55,15 +83,22 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.87.0",
     "@types/mocha": "^10.0.6",
-    "@types/node": "18.x",
+    "@types/node": "^18.19.22",
+    "@types/vscode": "^1.87.0",
     "@typescript-eslint/eslint-plugin": "^7.0.2",
     "@typescript-eslint/parser": "^7.0.2",
-    "eslint": "^8.56.0",
-    "typescript": "^5.3.3",
     "@vscode/test-cli": "^0.0.6",
     "@vscode/test-electron": "^2.3.9",
-    "fs": "0.0.1-security"
+    "axios": "^1.6.7",
+    "eslint": "^8.56.0",
+    "fs": "0.0.1-security",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "axios": "^1.6.7",
+    "eslint": "^8.56.0",
+    "fs": "0.0.1-security",
+    "typescript": "^5.3.3"
   }
 }

@@ -7,9 +7,9 @@ import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 
 
 const exec = util.promisify(childProcess.exec);
-//const privateToken = getConfigValue('gitvarmng.gitlabTokens');  // Replace with your actual private token
+
 let privateToken: string | undefined;
-// Add this interface to your code
+
 interface GitLabTokenPair {
     domain: string;
     privateToken: string;
@@ -32,22 +32,11 @@ function getPrivateToken(domain: string): string {
         vscode.window.showWarningMessage(`Private token not found for the domain : ${domain}`);
         return '';
     }
-    // Use a default token or handle the absence of a token for the domain
-    //return getConfigValue('gitvarmng.defaultPrivateToken') || '';
 }
 
 interface FormData {
     folder: string;
     customPath?: string;
-}
-
-// Define a function to get a value from settings.json
-function getConfigValue(key: string): any {
-    // Get the configuration for the extension
-    const config = vscode.workspace.getConfiguration('gitvarmng');
-
-    // Get the value for the specified key
-    return config.get(key);
 }
 
 async function getGitRemoteOrigin(folder: string): Promise<string> {
@@ -80,27 +69,14 @@ async function getGitLabProjectId(domain: string, path: string): Promise<number 
 }
 
 // Function to recursively fetch all pages and save variables to a file
-async function getAllVariablesAndSaveToFile(url: string, customPath: string | undefined, allVariables: any[] = []) {
+async function getAllVariablesAndSaveToFile(url: string, customPath: string, allVariables: any[] = []) {
     try {
-        const response = await axios.get(url, {
-            headers: {
-                'PRIVATE-TOKEN': privateToken
-            },
-        });
+        // Fetch all variables
+        const allVariables = await getAllVariables(url);
 
-        const variables = response.data;
-        const nextPageUrl = getNextPageUrl(response.headers.link);
+        // Fetch all variables
+        const saveVariables = await saveVariablesToFile(allVariables, customPath);
 
-        if (customPath) {
-            allVariables = allVariables.concat(variables);
-
-            if (nextPageUrl) {
-                return getAllVariablesAndSaveToFile(nextPageUrl, customPath, allVariables);
-            } else {
-                const filePath = path.join(customPath);
-                fs.writeFileSync(filePath, JSON.stringify(allVariables, null, 2));
-            }
-        }
     } catch (error) {
         if (axios.isAxiosError(error)) {
             throw new Error(`Error fetching CI/CD variables: ${error.message}`);
@@ -109,11 +85,25 @@ async function getAllVariablesAndSaveToFile(url: string, customPath: string | un
         }
     }
 }
-  
+
+
+async function saveVariablesToFile(variables: any[], filePath: string): Promise<void> {
+    try {
+        fs.writeFileSync(filePath, JSON.stringify(variables, null, 2));
+        vscode.window.showInformationMessage(`Variables saved to ${filePath} successfully.`);
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            throw new Error(`Failed to save variables to file: ${error.message}`);
+        } else {
+            throw new Error(`Unknown error: ${error}`);
+        }
+    }
+}
+
 // Function to extract the URL for the next page from the Link header
 function getNextPageUrl(linkHeader: string) {
-const match = linkHeader && linkHeader.match(/<([^>]+)>;\s*rel="next"/);
-return match ? match[1] : null;
+    const match = linkHeader && linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+    return match ? match[1] : null;
 }
 
 // PUSH
@@ -126,11 +116,10 @@ async function pushVariablesToGitLab(url: string, customPath: string) {
         for (const variable of variables) {
             try {
                 // Check if the variable already exists
-                const existingVariable = await getExistingVariable(url, variable.key);
-
+                const existingVariable = await getExistingVariable(url, variable.key, variable.environment_scope);
                 if (existingVariable) {
                     // Use the GitLab API to update the existing variable using PUT
-                    await axios.put(`${url}/${encodeURIComponent(variable.key)}`, variable, {
+                    await axios.put(`${url}/${encodeURIComponent(variable.key)}?filter[environment_scope]=${encodeURIComponent(variable.environment_scope)}`, variable, {
                         headers: {
                             'PRIVATE-TOKEN': privateToken,
                         },
@@ -162,17 +151,119 @@ async function pushVariablesToGitLab(url: string, customPath: string) {
     }
 }
 
-// Function to check if a variable with the same key already exists
-async function getExistingVariable(url: string, key: string): Promise<any | null> {
+async function listEnvironmentScopes(url: string): Promise<string[]> {
     try {
-        const response = await axios.get(`${url}/${encodeURIComponent(key)}`, {
+        // Fetch all variables
+        const allVariables = await getAllVariables(url);
+
+        // Extract unique environment scopes from all variables
+        const scopes = Array.from(new Set(allVariables.map(variable => variable.environment_scope)));
+
+        vscode.window.showInformationMessage(`Environment Scopes: ${scopes.join(', ')}`);
+        return scopes;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            throw new Error(`Failed to retrieve environment scopes: ${error.message}`);
+        } else {
+            throw new Error(`Unknown error: ${error}`);
+        }
+    }
+}
+
+
+async function getAllVariables(url: string): Promise<any[]> {
+    try {
+        let allVariables: any[] = [];
+        let nextPageUrl: string | null = url;
+
+        while (nextPageUrl !== null) {
+            const response = await axios.get(nextPageUrl, {
+                headers: {
+                    'PRIVATE-TOKEN': privateToken,
+                },
+            });
+
+            const variables = response.data;
+            allVariables = allVariables.concat(variables);
+
+            // Check if there is a next page
+            nextPageUrl = getNextPageUrl(response.headers.link);
+        }
+
+        return allVariables;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            throw new Error(`Failed to fetch variables: ${error.message}`);
+        } else {
+            throw new Error(`Unknown error: ${error}`);
+        }
+    }
+}
+
+async function selectEnvironmentScopes(scopes: string[]): Promise<string[] | undefined> {
+    const selectedScopes = await vscode.window.showQuickPick(scopes, {
+        canPickMany: true,
+        placeHolder: 'Select environment scopes (press Enter when done)',
+    });
+
+    return selectedScopes;
+}
+
+async function deleteVariablesByScope(url: string, selectedScopes: string[]) {
+    try {
+
+            // Fetch all variables
+        const allVariables = await getAllVariables(url);
+
+        // Delete variables based on the stored array
+        for (const variable of allVariables) {
+            console.log(variable);
+            // Check if the environment_scope includes the specified scope
+            if (selectedScopes.some(scope => variable.environment_scope.includes(scope))) {
+                console.log(variable.key);
+                await axios.delete(`${url}/${encodeURIComponent(variable.key)}?filter[environment_scope]=${encodeURIComponent(variable.environment_scope)}`, {
+                    headers: {
+                        'PRIVATE-TOKEN': privateToken,
+                    },
+                });
+            }
+        }
+
+        vscode.window.showInformationMessage(`Deletion of variables with scope '${selectedScopes}' completed for all pages.`);
+
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            throw new Error(`Failed to delete variables: ${error.message}`);
+        } else {
+            throw new Error(`Unknown error: ${error}`);
+        }
+    }
+}
+
+
+
+
+
+// Function to check if a variable with the same key and environment scope already exists
+async function getExistingVariable(url: string, key: string, environmentScope: string): Promise<any | null> {
+    try {
+        const apiUrl = `${url}/${encodeURIComponent(key)}?filter[environment_scope]=${encodeURIComponent(environmentScope)}`;
+
+        const response = await axios.get(apiUrl, {
             headers: {
                 'PRIVATE-TOKEN': privateToken,
             },
         });
-        return response.data;
+
+        const existingVariable = response.data;
+        // Check if there is a variable with the same key and environment scope
+        if (existingVariable && existingVariable.environment_scope === environmentScope) {
+            return existingVariable;
+        } else {
+            return null;
+        }
     } catch (error) {
-        // If the variable doesn't exist, return null
+        // Handle errors appropriately
         if (axios.isAxiosError(error) && error.response && error.response.status === 404) {
             return null;
         } else {
@@ -180,7 +271,6 @@ async function getExistingVariable(url: string, key: string): Promise<any | null
         }
     }
 }
-
 // Main
 export function activate(context: vscode.ExtensionContext) {
   
@@ -194,10 +284,16 @@ export function activate(context: vscode.ExtensionContext) {
         main("pull");
     });
 
+    // Command for 'List GitLab Environment Scopes'
+    let delVariablesDisposable = vscode.commands.registerCommand('gitvarmng.gitlabDelVariables', async () => {
+        main("del");
+    });
+
     // Add both disposables to the context.subscriptions array
     context.subscriptions.push(pushVariablesDisposable);
     context.subscriptions.push(pullVariablesDisposable);
-
+    context.subscriptions.push(delVariablesDisposable);
+    
     async function main(action: string) {
         
         // Selecting folder
@@ -215,45 +311,14 @@ export function activate(context: vscode.ExtensionContext) {
 
         const folder = folderUri[0].fsPath;
 
-
         var customPath = "";
-        if (action === "pull") {
-            const customPathUri = await vscode.window.showSaveDialog({
-                defaultUri: vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri : undefined,
-                filters: {
-                    'All Files': ['*'],
-                },
-            });
-            if (!customPathUri) {
-                vscode.window.showWarningMessage('No file selected.');
-                return;
-            }
-            
-            customPath = customPathUri.fsPath;
-        } else {
-            const customPathUri = await vscode.window.showOpenDialog({
-                canSelectFiles: true,
-                canSelectFolders: false,
-                canSelectMany: false,
-                openLabel: 'Select file',
-                filters: {
-                    'All Files': ['json'],
-                },
-            });
 
-            if (!customPathUri) {
-                vscode.window.showWarningMessage('No file selected.');
-                return;
-            }
-            
-            customPath = customPathUri[0].fsPath;
-        }
-        
         const formData: FormData = {
             folder,
-            //action: selectedAction.label.toLowerCase() as 'push' | 'pull',
             customPath
         };
+
+        
 
         const remoteOrigin = await getGitRemoteOrigin(formData.folder);
         const [namespace, project] = remoteOrigin.split('/').slice(-2);
@@ -269,25 +334,78 @@ export function activate(context: vscode.ExtensionContext) {
         const gitLabProjectId = await getGitLabProjectId(domain, path);
 
         if (gitLabProjectId !== undefined) {
-            //vscode.window.showInformationMessage(`GitLab Project ID: ${gitLabProjectId}`);
-            
-            
-            
             // Call the function to get all variables
             const urlVariables = `${domain}/api/v4/projects/${encodeURIComponent(`${gitLabProjectId}`)}/variables`;
-            if (action === "pull") {
-                getAllVariablesAndSaveToFile(urlVariables, customPath)
-                .then(() => {
-                    vscode.window.showInformationMessage('Variables saved to file successfully.');
-                })
-                .catch(error => {
-                    console.error(error.message);
-                    vscode.window.showErrorMessage(`Failed to save variables to file: ${error.message}`);
-                });
-            }
+            
 
             if (action === "push") {
+                const customPathUri = await vscode.window.showOpenDialog({
+                    canSelectFiles: true,
+                    canSelectFolders: false,
+                    canSelectMany: false,
+                    openLabel: 'Select file',
+                    filters: {
+                        'All Files': ['json'],
+                    },
+                });
+    
+                if (!customPathUri) {
+                    vscode.window.showWarningMessage('No file selected.');
+                    return;
+                }
+                
+                customPath = customPathUri[0].fsPath;
+
                 pushVariablesToGitLab(urlVariables, customPath);
+            }
+
+            if (action === "del" || action === "pull") {
+                
+                var delWithSav = false;
+                if(action === "del"){
+                    delWithSav = await vscode.window.showWarningMessage(
+                        "Do you want save all variables before?",
+                        { modal: true },
+                        'Yes',
+                        'No'
+                    ) === 'Yes';
+                }
+
+                if (action === "pull" || delWithSav) {
+                    const customPathUri = await vscode.window.showSaveDialog({
+                        defaultUri: vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri : undefined,
+                        filters: {
+                            'All Files': ['*'],
+                        },
+                    });
+                    if (!customPathUri) {
+                        vscode.window.showWarningMessage('No file selected.');
+                        return;
+                    }
+                    
+                    customPath = customPathUri.fsPath;
+    
+    
+                    getAllVariablesAndSaveToFile(urlVariables, customPath)
+                    .then(() => {
+                        vscode.window.showInformationMessage(`Variables saved to ${customPath} successfully.`);
+                    })
+                    .catch(error => {
+                        console.error(error.message);
+                        vscode.window.showErrorMessage(`Failed to save variables to file: ${error.message}`);
+                    });
+                }
+
+                if(action === "del"){
+                    const availableScopes = await listEnvironmentScopes(urlVariables);
+                    const selectedScopes = await selectEnvironmentScopes(availableScopes);
+                    if (selectedScopes && selectedScopes.length > 0) {
+                        vscode.window.showInformationMessage(`Selected Environment Scopes: ${selectedScopes.join(', ')}`);
+                        deleteVariablesByScope(urlVariables, selectedScopes);
+                    } else {
+                        vscode.window.showInformationMessage('No environment scopes selected.');
+                    }
+                }
             }
 
         } else {

@@ -6,7 +6,9 @@ Pull, Push your CI/CD variables from/to your Gitlab projects in json format.
 
 Opening Visual Studio Code command palette by `Ctrl + P`
 
-# Pull variables from Gitlab project
+---
+
+### Pull variables from Gitlab project
 
 Use this command : `Gitlab Pull Variables`
 
@@ -49,13 +51,21 @@ File example:
   ...
 ]
 ```
+---
 
-# Push variables to Gitlab project
+### Push variables to Gitlab project
 
 Use this command : `Gitlab Push Variables`
 
 Selecte your Git project then select the json file to push your variables to the Gitlab project.
 
+---
+
+### Remove variables from Gitlab project
+
+Use this command : `Gitlab Del Variables`
+
+Choose your Git project and indicate whether you'd like to create a backup. If you opt for a backup, specify the JSON file to retrieve your variables from the GitLab project. Following that, you can choose the scope of environments you wish to delete.
 
 ## Configuration
 
@@ -78,25 +88,10 @@ Example :
 ```
 
 
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
 ## Release Notes
 
-### 0.0.1-2024-03-07
-First version 🎉
+### 1.0.0 - 2024-03-09
+First release 🎉
 
 
 ---
