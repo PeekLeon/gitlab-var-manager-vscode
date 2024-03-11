@@ -1,8 +1,8 @@
 {
   "name": "gitvarmng",
   "displayName": "gitvarmng",
-  "description": "Pull, Push your CI/CD variables from/to your Gitlab projects in json format. ",
-  "version": "1.0.0",
+  "description": "Pull, Push, Delete your CI/CD variables from/to your Gitlab projects in json format. ",
+  "version": "1.1.0",
   "publisher": "RomainLEON",
   "icon": "images/logo.png",
   "keywords": [
@@ -67,7 +67,8 @@
           "example": [
             {
                 "domain": "example.gitlab.com",
-                "privateToken": "your_private_token_here"
+                "privateToken": "your_private_token_here",
+                "defaultSavPath": "your default path"
             }
           ]
         }

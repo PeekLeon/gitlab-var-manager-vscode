@@ -9,30 +9,27 @@ import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 const exec = util.promisify(childProcess.exec);
 
 let privateToken: string | undefined;
+let defaultSavPath: string | undefined;
 
 interface GitLabTokenPair {
     domain: string;
     privateToken: string;
+    defaultSavPath: string;
 }
 
-// Function to get private token for a specific domain
-function getPrivateTokenForDomain(domain: string): string | undefined {
+// Function to get private token and defaultSavPath for a specific domain
+function getPrivateTokenAndPathForDomain(domain: string): { privateToken: string, defaultSavPath: string } | undefined {
     const gitlabTokens: GitLabTokenPair[] = vscode.workspace.getConfiguration('gitvarmng').get('gitlabTokens') || [];
     const matchingToken = gitlabTokens.find((pair: GitLabTokenPair) => pair.domain === domain);
 
-    return matchingToken ? matchingToken.privateToken : undefined;
-}
-
-// Function to get private token
-function getPrivateToken(domain: string): string {
-    const token = getPrivateTokenForDomain(domain);
-    if (token) {
-        return token;
-    }else{
-        vscode.window.showWarningMessage(`Private token not found for the domain : ${domain}`);
-        return '';
+    if (matchingToken) {
+        return { privateToken: matchingToken.privateToken, defaultSavPath: matchingToken.defaultSavPath };
+    } else {
+        vscode.window.showWarningMessage(`Private token not found for the domain: ${domain}`);
+        return { privateToken: '', defaultSavPath: '' }; // You may want to handle this case differently
     }
 }
+
 
 interface FormData {
     folder: string;
@@ -217,10 +214,10 @@ async function deleteVariablesByScope(url: string, selectedScopes: string[]) {
 
         // Delete variables based on the stored array
         for (const variable of allVariables) {
-            console.log(variable);
+            
             // Check if the environment_scope includes the specified scope
             if (selectedScopes.some(scope => variable.environment_scope.includes(scope))) {
-                console.log(variable.key);
+                
                 await axios.delete(`${url}/${encodeURIComponent(variable.key)}?filter[environment_scope]=${encodeURIComponent(variable.environment_scope)}`, {
                     headers: {
                         'PRIVATE-TOKEN': privateToken,
@@ -239,10 +236,6 @@ async function deleteVariablesByScope(url: string, selectedScopes: string[]) {
         }
     }
 }
-
-
-
-
 
 // Function to check if a variable with the same key and environment scope already exists
 async function getExistingVariable(url: string, key: string, environmentScope: string): Promise<any | null> {
@@ -318,8 +311,6 @@ export function activate(context: vscode.ExtensionContext) {
             customPath
         };
 
-        
-
         const remoteOrigin = await getGitRemoteOrigin(formData.folder);
         const [namespace, project] = remoteOrigin.split('/').slice(-2);
 
@@ -329,8 +320,10 @@ export function activate(context: vscode.ExtensionContext) {
         const domain = `${parsedUrl.protocol}//${parsedUrl.host}`;
         const path = parsedUrl.pathname.substring(1); // Exclude the leading "/"
 
-        privateToken = getPrivateToken(`${parsedUrl.host}`);
-
+        const domainConf = getPrivateTokenAndPathForDomain(`${parsedUrl.host}`);
+        privateToken = domainConf?.privateToken;
+        defaultSavPath = domainConf?.defaultSavPath;
+        
         const gitLabProjectId = await getGitLabProjectId(domain, path);
 
         if (gitLabProjectId !== undefined) {
@@ -343,6 +336,7 @@ export function activate(context: vscode.ExtensionContext) {
                     canSelectFiles: true,
                     canSelectFolders: false,
                     canSelectMany: false,
+                    defaultUri: defaultSavPath ? vscode.Uri.file(defaultSavPath) : vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri : undefined,
                     openLabel: 'Select file',
                     filters: {
                         'All Files': ['json'],
@@ -373,9 +367,9 @@ export function activate(context: vscode.ExtensionContext) {
 
                 if (action === "pull" || delWithSav) {
                     const customPathUri = await vscode.window.showSaveDialog({
-                        defaultUri: vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri : undefined,
+                        defaultUri: defaultSavPath ? vscode.Uri.file(defaultSavPath) : vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri : undefined,
                         filters: {
-                            'All Files': ['*'],
+                            'All Files': ['json'],
                         },
                     });
                     if (!customPathUri) {

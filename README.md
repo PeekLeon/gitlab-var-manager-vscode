@@ -77,11 +77,13 @@ Example :
 "gitvarmng.gitlabTokens": [
   {
     "domain": "mygitlab-rec.fr",
-    "privateToken": "my-gitlab-token-rec"
+    "privateToken": "my-gitlab-token-rec",
+    "defaultSavPath": "D:\\vbox_data\\var-gitlab\\rec"
   },
   {
     "domain": "mygitlab-prod.fr",
-    "privateToken": "y-gitlab-token-prod"
+    "privateToken": "y-gitlab-token-prod",
+    "defaultSavPath": "D:\\vbox_data\\var-gitlab\\prod"
   },
   ...
 ]
@@ -89,6 +91,10 @@ Example :
 
 
 ## Release Notes
+
+### 1.1.0 - 2024-03-11
+Add a default path per instance for the variable files.
+Set this parameter to `defaultSavPath`.
 
 ### 1.0.0 - 2024-03-09
 First release 🎉
