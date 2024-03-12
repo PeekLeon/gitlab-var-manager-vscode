@@ -17,6 +17,64 @@ interface GitLabTokenPair {
     defaultSavPath: string;
 }
 
+function extractVariables(document: vscode.TextDocument): string[] {
+    const variables: Set<string> = new Set();
+    const text = document.getText();
+    const variableRegex = /\$\{?([a-zA-Z_]\w*)\}?/g;
+  
+    let match: RegExpExecArray | null;
+    while ((match = variableRegex.exec(text)) !== null) {
+      const variableName = match[1] || match[0];
+      variables.add(variableName);
+    }
+  
+    return Array.from(variables);
+}
+
+interface VariableInfo {
+    variable_type: string;
+    key: string;
+    value: string;
+    protected: boolean;
+    masked: boolean;
+    raw: boolean;
+    environment_scope: string;
+    description: string | null;
+}
+
+function generateVariableInfo(variableName: string): VariableInfo {
+    return {
+      variable_type: 'env_var',
+      key: variableName,
+      value: '',
+      protected: true,
+      masked: false,
+      raw: true,
+      environment_scope: 'placeholder',
+      description: null,
+    };
+  }
+  
+function showVariables(document: vscode.TextDocument, destPath: string): void {
+const variables = extractVariables(document);
+const variableInfoList: VariableInfo[] = [];
+
+for (const variable of variables) {
+    variableInfoList.push(generateVariableInfo(variable));
+}
+
+if (variableInfoList.length === 0) {
+    vscode.window.showInformationMessage('No variables found.');
+} else {
+    const jsonContent = JSON.stringify(variableInfoList, null, 2);
+    //const outputPath = vscode.workspace.rootPath || __dirname; // Change this as needed
+
+    fs.writeFileSync(destPath, jsonContent);
+    vscode.window.showInformationMessage(`Variables exported to: ${destPath}`);
+}
+}
+  
+
 // Function to get private token and defaultSavPath for a specific domain
 function getPrivateTokenAndPathForDomain(domain: string): { privateToken: string, defaultSavPath: string } | undefined {
     const gitlabTokens: GitLabTokenPair[] = vscode.workspace.getConfiguration('gitvarmng').get('gitlabTokens') || [];
@@ -34,6 +92,10 @@ function getPrivateTokenAndPathForDomain(domain: string): { privateToken: string
 interface FormData {
     folder: string;
     customPath?: string;
+}
+
+interface FormGenFile {
+    customPath: string;
 }
 
 async function getGitRemoteOrigin(folder: string): Promise<string> {
@@ -282,10 +344,39 @@ export function activate(context: vscode.ExtensionContext) {
         main("del");
     });
 
+    // Command for 'List GitLab Environment Scopes'
+    let genJsonFileDisposable = vscode.commands.registerCommand('gitvarmng.genJsonFile', async () => {
+        genJsonFile();
+    });
+    const editor = vscode.window.activeTextEditor;
+    async function genJsonFile(){
+        if (editor) {
+            const customPathUri = await vscode.window.showSaveDialog({
+                defaultUri: defaultSavPath ? vscode.Uri.file(defaultSavPath) : vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri : undefined,
+                filters: {
+                    'All Files': ['json'],
+                },
+            });
+
+            if (!customPathUri) {
+                vscode.window.showWarningMessage('No file selected.');
+                return;
+            }
+            
+            const customPath = customPathUri.fsPath;
+
+            showVariables(editor.document, customPath);
+        } else {
+        vscode.window.showErrorMessage('No active editor found.');
+        }
+            
+    }
+
     // Add both disposables to the context.subscriptions array
     context.subscriptions.push(pushVariablesDisposable);
     context.subscriptions.push(pullVariablesDisposable);
     context.subscriptions.push(delVariablesDisposable);
+    context.subscriptions.push(genJsonFileDisposable);
     
     async function main(action: string) {
         

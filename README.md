@@ -1,6 +1,6 @@
 # Gitlab Variables Manager
 
-Pull, Push your CI/CD variables from/to your Gitlab projects in json format.
+Manage the variables of your Gitlab CI/CD projects in json format.
 
 ## How it's work
 
@@ -10,7 +10,7 @@ Opening Visual Studio Code command palette by `Ctrl + P`
 
 ### Pull variables from Gitlab project
 
-Use this command : `Gitlab Pull Variables`
+Command : `Gitlab Pull Variables`
 
 Selecte your Git project then select the destination to pull your variables into json from the Gitlab project.
 
@@ -55,7 +55,7 @@ File example:
 
 ### Push variables to Gitlab project
 
-Use this command : `Gitlab Push Variables`
+Command : `Gitlab Push Variables`
 
 Selecte your Git project then select the json file to push your variables to the Gitlab project.
 
@@ -63,9 +63,16 @@ Selecte your Git project then select the json file to push your variables to the
 
 ### Remove variables from Gitlab project
 
-Use this command : `Gitlab Del Variables`
+Command : `Gitlab Del Variables`
 
 Choose your Git project and indicate whether you'd like to create a backup. If you opt for a backup, specify the JSON file to retrieve your variables from the GitLab project. Following that, you can choose the scope of environments you wish to delete.
+
+### Generate JSON File
+
+Command : `Gitlab Generate json variables file`
+
+This command generates a JSON file containing the environment variables used in the currently open VSCode editor. You can select a custom path to save the generated JSON file.
+
 
 ## Configuration
 
@@ -91,6 +98,9 @@ Example :
 
 
 ## Release Notes
+
+### 1.2.0 - 2024-03-12
+Adding `Gitlab Generate json variables file` functionality.
 
 ### 1.1.0 - 2024-03-11
 Add a default path per instance for the variable files.

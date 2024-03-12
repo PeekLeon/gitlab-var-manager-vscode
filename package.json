@@ -2,7 +2,7 @@
   "name": "gitvarmng",
   "displayName": "gitvarmng",
   "description": "Pull, Push, Delete your CI/CD variables from/to your Gitlab projects in json format. ",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publisher": "RomainLEON",
   "icon": "images/logo.png",
   "keywords": [
@@ -39,6 +39,10 @@
       {
         "command": "gitvarmng.gitlabDelVariables",
         "title": "Gitlab Del Variables"
+      },
+      {
+        "command": "gitvarmng.genJsonFile",
+        "title": "Gitlab Generate json variables file"
       }
     ],
     "configuration": {
