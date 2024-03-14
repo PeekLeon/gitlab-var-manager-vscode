@@ -18,18 +18,33 @@ interface GitLabTokenPair {
 }
 
 function extractVariables(document: vscode.TextDocument): string[] {
+    const config = vscode.workspace.getConfiguration('gitvarmng');
+    const excludedPrefixes: string[] = config.get('excludePrefixes') || [];
+    const excludedSuffixes: string[] = config.get('excludeSuffixes') || [];
+    const excludedContent: string[] = config.get('excludeContent') || [];
+
     const variables: Set<string> = new Set();
     const text = document.getText();
     const variableRegex = /\$\{?([a-zA-Z_]\w*)\}?/g;
-  
+
     let match: RegExpExecArray | null;
     while ((match = variableRegex.exec(text)) !== null) {
-      const variableName = match[1] || match[0];
-      variables.add(variableName);
+        const variableName = match[1] || match[0];
+
+        if (
+            !excludedPrefixes.some(prefix => variableName.startsWith(prefix)) &&
+            !excludedSuffixes.some(suffix => variableName.endsWith(suffix)) &&
+            !excludedContent.some(content => variableName.includes(content))
+        ) {
+            variables.add(variableName);
+        }
     }
-  
+
     return Array.from(variables);
 }
+
+
+
 
 interface VariableInfo {
     variable_type: string;

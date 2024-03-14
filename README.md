@@ -67,18 +67,41 @@ Command : `Gitlab Del Variables`
 
 Choose your Git project and indicate whether you'd like to create a backup. If you opt for a backup, specify the JSON file to retrieve your variables from the GitLab project. Following that, you can choose the scope of environments you wish to delete.
 
+---
+
 ### Generate JSON File
 
 Command : `Gitlab Generate json variables file`
 
 This command generates a JSON file containing the environment variables used in the currently open VSCode editor. You can select a custom path to save the generated JSON file.
 
+The function relies on the following settings defined in the extension's **settings.json**:
 
-## Configuration
+`excludePrefixes`: An array of string prefixes. Variables starting with any of these prefixes will be excluded from extraction.
 
-Add in your settings.json your private token.
+`excludeSuffixes`: An array of string suffixes. Variables ending with any of these suffixes will be excluded from extraction.
 
-Example :
+`excludeContent`: An array of string content. Variables containing any of these strings within their names will be excluded from extraction.
+
+Example:
+
+```json
+"gitvarmng.excludePrefixes": [
+        "CI_"
+],
+"gitvarmng.excludeSuffixes": [
+    "foo"
+],
+"gitvarmng.excludeContent": [
+    "bar"
+]
+```
+
+## Gitlab token configuration
+
+Add in your **settings.json** your private token.
+
+Example:
 
 ```json
 "gitvarmng.gitlabTokens": [
@@ -98,6 +121,9 @@ Example :
 
 
 ## Release Notes
+
+### 1.3.0 - 2024-03-14
+Added options for `Gitlab Generate json variables file` functionality.
 
 ### 1.2.0 - 2024-03-12
 Adding `Gitlab Generate json variables file` functionality.
