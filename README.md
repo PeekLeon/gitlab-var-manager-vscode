@@ -122,6 +122,9 @@ Example:
 
 ## Release Notes
 
+### 1.3.1 - 2024-03-15
+Debug package.json dependencies.
+
 ### 1.3.0 - 2024-03-14
 Added options for `Gitlab Generate json variables file` functionality.
 
