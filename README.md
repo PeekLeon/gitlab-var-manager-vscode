@@ -87,13 +87,13 @@ Example:
 
 ```json
 "gitvarmng.excludePrefixes": [
-        "CI_"
+  "CI_"
 ],
 "gitvarmng.excludeSuffixes": [
-    "foo"
+  "foo"
 ],
 "gitvarmng.excludeContent": [
-    "bar"
+  "bar"
 ]
 ```
 
@@ -112,7 +112,7 @@ Example:
   },
   {
     "domain": "mygitlab-prod.fr",
-    "privateToken": "y-gitlab-token-prod",
+    "privateToken": "my-gitlab-token-prod",
     "defaultSavPath": "D:\\vbox_data\\var-gitlab\\prod"
   },
   ...
@@ -121,6 +121,9 @@ Example:
 
 
 ## Release Notes
+
+### 1.4.0 - 2024-03-16
+Automatically opens generated files when using the `Gitlab Pull Variables` and `Gitlab Generate json variables file` commands
 
 ### 1.3.1 - 2024-03-15
 Debug package.json dependencies.

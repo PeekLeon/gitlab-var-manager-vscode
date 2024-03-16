@@ -363,8 +363,9 @@ export function activate(context: vscode.ExtensionContext) {
     let genJsonFileDisposable = vscode.commands.registerCommand('gitvarmng.genJsonFile', async () => {
         genJsonFile();
     });
-    const editor = vscode.window.activeTextEditor;
+    
     async function genJsonFile(){
+        const editor = vscode.window.activeTextEditor;
         if (editor) {
             const customPathUri = await vscode.window.showSaveDialog({
                 defaultUri: defaultSavPath ? vscode.Uri.file(defaultSavPath) : vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri : undefined,
@@ -381,6 +382,9 @@ export function activate(context: vscode.ExtensionContext) {
             const customPath = customPathUri.fsPath;
 
             showVariables(editor.document, customPath);
+            vscode.workspace.openTextDocument(customPath).then((document) => {
+                vscode.window.showTextDocument(document);
+            });
         } else {
         vscode.window.showErrorMessage('No active editor found.');
         }
@@ -488,10 +492,12 @@ export function activate(context: vscode.ExtensionContext) {
     
                     getAllVariablesAndSaveToFile(urlVariables, customPath)
                     .then(() => {
+                        vscode.workspace.openTextDocument(customPath).then((document) => {
+                            vscode.window.showTextDocument(document);
+                        });
                         vscode.window.showInformationMessage(`Variables saved to ${customPath} successfully.`);
                     })
                     .catch(error => {
-                        console.error(error.message);
                         vscode.window.showErrorMessage(`Failed to save variables to file: ${error.message}`);
                     });
                 }
