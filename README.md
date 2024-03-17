@@ -122,6 +122,9 @@ Example:
 
 ## Release Notes
 
+### 1.4.1 - 2024-03-17
+Removing unnecessary dependencies.
+
 ### 1.4.0 - 2024-03-16
 Automatically opens generated files when using the `Gitlab Pull Variables` and `Gitlab Generate json variables file` commands
 

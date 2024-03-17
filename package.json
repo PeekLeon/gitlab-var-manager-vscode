@@ -2,7 +2,7 @@
   "name": "gitvarmng",
   "displayName": "gitvarmng",
   "description": "Manage the variables of your Gitlab CI/CD projects in json format.",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "publisher": "RomainLEON",
   "icon": "images/logo.png",
   "keywords": [
